@@ -1,9 +1,11 @@
 const std = @import("std");
 const root = @import("root.zig");
 const day01 = @import("day01.zig");
+const day02 = @import("day02.zig");
 
 const Day = enum {
     day01,
+    day02,
 };
 
 pub fn main() !void {
@@ -23,6 +25,7 @@ pub fn main() !void {
             };
             switch (day) {
                 .day01 => try day01.run(&allocator),
+                .day02 => try day02.run(&allocator),
             }
         },
         else => printInstruction()

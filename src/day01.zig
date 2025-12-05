@@ -7,19 +7,19 @@ const Direction = enum { L, R };
 
 const Instruction = struct {
     direction: Direction,
-    distance: u16,
+    distance: u32,
 };
 
 const Data = struct {
     instructions: std.MultiArrayList(Instruction),
-    zero: usize,
+    click: usize,
 
     const Self = @This();
 
     fn new() Self {
         return Self {
             .instructions = .{},
-            .zero = 0,
+            .click = 0,
         };
     }
 
@@ -35,45 +35,81 @@ const Data = struct {
         self.instructions.deinit(allocator.*);
     }
 
-    fn run(self: *Self) void {
-        var start: u16 = 50;
+    fn process_part_1(self: *Self) void {
+        var start: u32 = 50;
         const direction: []Direction = self.instructions.items(std.meta.FieldEnum(Instruction).direction);
-        const distance: []u16 = self.instructions.items(std.meta.FieldEnum(Instruction).distance);
+        const distance: []u32 = self.instructions.items(std.meta.FieldEnum(Instruction).distance);
 
         for (direction, distance) |dir, dis| {
-            processInstruction(&start, dir, dis, &self.zero);
+            const rem = dis % 100;
+
+            switch (dir) {
+                .L => {
+                    const dec: u32 = @intCast(@intFromBool(rem > start));
+                    start = dec * 100 + start - rem;
+                },
+                .R => {
+                    const inc: u32 = @intCast(@intFromBool(start + rem > 99));
+                    start = start + rem - inc * 100;
+                },
+            }
+
+            self.click += @intFromBool(start == 0);
         }
 
-        std.debug.print("\nResult is: {d}\n", .{ self.zero });
+        std.debug.print("\nResult part 1 is: {d}\n\n", .{ self.click });
+    }
+
+    fn process_part_2(self: *Self, comptime log: bool) void {
+        var start: u32 = 50;
+        const direction: []Direction = self.instructions.items(std.meta.FieldEnum(Instruction).direction);
+        const distance: []u32 = self.instructions.items(std.meta.FieldEnum(Instruction).distance);
+
+        for (direction, distance) |dir, dis| {
+            if (log) { std.debug.print("{d:3} => {any}{d:<3} => ", .{ start, dir, dis }); }
+
+            switch (dir) {
+                .L => {
+                    const rep = dis / 100;
+                    const remDist = 100 - (dis % 100);
+
+                    self.click += rep + @intFromBool((dis % 100) > start and start > 0);
+                    start = (start + remDist) % 100;
+                    self.click += @intFromBool(start == 0);
+
+                    if (log) {
+                        std.debug.print("current: {d:3} . rep: {d} . remDist: {d:3} => ", .{ start, rep, remDist });
+                    }
+                },
+                .R => {
+                    const rep = dis / 100;
+                    const remDist = dis % 100;
+
+                    self.click += rep + @intFromBool(start + remDist > 100);
+                    start = (start + remDist) % 100;
+                    self.click += @intFromBool(start == 0);
+
+                    if (log) {
+                        std.debug.print("current: {d:3} . rep: {d} . remDist: {d:3} => ", .{ start, rep, remDist });
+                    }
+                },
+            }
+
+            if (log) { std.debug.print("click: {d} . [{d:>2}]\n", .{ self.click, start }); }
+        }
+
+        std.debug.print("\nResult part 2 is: {d}\n\n", .{ self.click });
     }
 };
 
-fn processInstruction(start: *u16, direction: Direction, distance: u16, count: *usize) void {
-    const rem = distance % 100;
-
-    switch (direction) {
-        .L => {
-            const dec: u16 = @intCast(@intFromBool(rem > start.*));
-            start.* = dec * 100 + start.* - rem;
-        },
-        .R => {
-            const inc: u16 = @intCast(@intFromBool(start.* + rem > 99));
-            start.* = start.* + rem - inc * 100;
-        },
-    }
-
-    count.* += @intFromBool(start.* == 0);
-}
-
 fn parseInput(input: []const u8, allocator: *const Allocator, data: *Data) !void {
     const len = input.len - 1;
-    const i = input[0..len];
-    var iter = std.mem.splitSequence(u8, i, "\n");
-
     try data.init(allocator, len / 3);
 
+    var iter = std.mem.splitSequence(u8, input[0..len], "\n");
+
     while (iter.next()) |inst| {
-        const distance = try std.fmt.parseInt(u16, inst[1..], 10);
+        const distance = try std.fmt.parseInt(u32, inst[1..], 10);
 
         if (std.ascii.startsWithIgnoreCase(inst, "L")) {
             data.push(.{ .direction = Direction.L, .distance = distance });
@@ -91,7 +127,8 @@ pub fn run(allocator: *const Allocator) !void {
     defer data.deinit(allocator);
 
     try parseInput(input, allocator, &data);
-    data.run();
+    data.process_part_1();
+    data.process_part_2(false);
 }
 
 const testInput =
@@ -114,5 +151,16 @@ test "day01" {
     defer data.deinit(&allocator);
 
     try parseInput(testInput, &allocator, &data);
-    data.run();
+    data.process_part_1();
 }
+
+test "day02" {
+    const allocator = std.testing.allocator;
+    var data = Data.new();
+    defer data.deinit(&allocator);
+
+    try parseInput(testInput, &allocator, &data);
+    data.process_part_2(true);
+}
+
+// 7407 -> too high
