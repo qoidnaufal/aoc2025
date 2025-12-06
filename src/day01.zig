@@ -35,12 +35,27 @@ const Data = struct {
         self.instructions.deinit(allocator.*);
     }
 
+    const Items = struct {
+        direction: *const []Direction,
+        distance: *const []u32,
+    };
+
+    fn getItems(self: *Self) Items {
+        return Items {
+            .direction = &self.instructions.items(std.meta.FieldEnum(Instruction).direction),
+            .distance = &self.instructions.items(std.meta.FieldEnum(Instruction).distance)
+        };
+    }
+
+    inline fn reset(self: *Self) void {
+        self.click = 0;
+    }
+
     fn process_part_1(self: *Self) void {
         var start: u32 = 50;
-        const direction: []Direction = self.instructions.items(std.meta.FieldEnum(Instruction).direction);
-        const distance: []u32 = self.instructions.items(std.meta.FieldEnum(Instruction).distance);
+        const items = self.getItems();
 
-        for (direction, distance) |dir, dis| {
+        for (items.direction.*, items.distance.*) |dir, dis| {
             const rem = dis % 100;
 
             switch (dir) {
@@ -61,44 +76,35 @@ const Data = struct {
     }
 
     fn process_part_2(self: *Self, comptime log: bool) void {
+        self.reset();
         var start: u32 = 50;
-        const direction: []Direction = self.instructions.items(std.meta.FieldEnum(Instruction).direction);
-        const distance: []u32 = self.instructions.items(std.meta.FieldEnum(Instruction).distance);
+        const items = self.getItems();
 
-        for (direction, distance) |dir, dis| {
+        for (items.direction.*, items.distance.*) |dir, dis| {
+            self.click += dis / 100;
+            var remDist: u32 = 0;
             if (log) { std.debug.print("{d:3} => {any}{d:<3} => ", .{ start, dir, dis }); }
 
             switch (dir) {
                 .L => {
-                    const rep = dis / 100;
-                    const remDist = 100 - (dis % 100);
-
-                    self.click += rep + @intFromBool((dis % 100) > start and start > 0);
-                    start = (start + remDist) % 100;
-                    self.click += @intFromBool(start == 0);
-
-                    if (log) {
-                        std.debug.print("current: {d:3} . rep: {d} . remDist: {d:3} => ", .{ start, rep, remDist });
-                    }
+                    remDist = 100 - (dis % 100);
+                    self.click += @intFromBool((dis % 100) > start and start > 0);
+                    if (log) { std.debug.print("current: {d:2} . remDist: {d:2} . ", .{ start, remDist }); }
                 },
                 .R => {
-                    const rep = dis / 100;
-                    const remDist = dis % 100;
-
-                    self.click += rep + @intFromBool(start + remDist > 100);
-                    start = (start + remDist) % 100;
-                    self.click += @intFromBool(start == 0);
-
-                    if (log) {
-                        std.debug.print("current: {d:3} . rep: {d} . remDist: {d:3} => ", .{ start, rep, remDist });
-                    }
+                    remDist = dis % 100;
+                    self.click += @intFromBool(start + remDist > 100);
+                    if (log) { std.debug.print("current: {d:2} . remDist: {d:2} . ", .{ start, remDist }); }
                 },
             }
 
-            if (log) { std.debug.print("click: {d} . [{d:>2}]\n", .{ self.click, start }); }
+            start = (start + remDist) % 100;
+            self.click += @intFromBool(start == 0);
+            if (log) { std.debug.print("click: {d:04} => [ {d:2} ]\n", .{ self.click, start }); }
         }
 
-        std.debug.print("\nResult part 2 is: {d}\n\n", .{ self.click });
+        if (log) { std.debug.print("\n", .{}); }
+        std.debug.print("Result part 2 is: {d}\n", .{ self.click });
     }
 };
 
@@ -162,5 +168,3 @@ test "day02" {
     try parseInput(testInput, &allocator, &data);
     data.process_part_2(true);
 }
-
-// 7407 -> too high
