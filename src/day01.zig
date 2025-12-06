@@ -160,7 +160,7 @@ const testInput =
 \\
 ;
 
-test "day01a" {
+test "part1" {
     const allocator = std.testing.allocator;
     var data = Data.new();
     defer data.deinit(&allocator);
@@ -169,7 +169,7 @@ test "day01a" {
     data.process_part_1();
 }
 
-test "day01b" {
+test "part2" {
     const allocator = std.testing.allocator;
     var data = Data.new();
     defer data.deinit(&allocator);

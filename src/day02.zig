@@ -35,14 +35,29 @@ const Ranges = struct {
 
         var count: usize = 0;
         for (lo, hi) |start, end| {
-            try stringify(start, end, &count, &s);
+            try repeated_twice(start, end, &count, &s);
         }
 
-        std.debug.print("{d}\n", .{ count });
+        std.debug.print("Result part 1: {d}\n", .{ count });
+    }
+
+    fn process_part_2(self: *Self, allocator: *const Allocator, comptime log: bool) !void {
+        const lo = self.start.items;
+        const hi = self.end.items;
+
+        var s = try String.new(allocator, 10);
+        defer s.destroy(allocator);
+
+        var count: usize = 0;
+        for (lo, hi) |start, end| {
+            try repeated_more_than_twice(start, end, &count, &s, log);
+        }
+
+        std.debug.print("Result part 2: {d}\n", .{ count });
     }
 };
 
-inline fn stringify(start: usize, end: usize, count: *usize, s: *String) !void {
+inline fn repeated_twice(start: usize, end: usize, count: *usize, s: *String) !void {
     for (start..end + 1) |id| {
         const string = try s.createStr("{d}", .{ id });
 
@@ -52,6 +67,35 @@ inline fn stringify(start: usize, end: usize, count: *usize, s: *String) !void {
 
         if (std.mem.eql(u8, front, back)) {
             count.* += id;
+        }
+    }
+}
+
+inline fn repeated_more_than_twice(
+    start: usize,
+    end: usize,
+    count: *usize,
+    s: *String,
+    comptime log: bool
+) !void {
+    for (start..end + 1) |id| {
+        const string = try s.createStr("{d}", .{ id });
+
+        inner: for (0..string.len / 2) |index| {
+            var windowIter = std.mem.window(u8, string, index + 1, index + 1);
+            var tempBuf: []const u8 = windowIter.next() orelse "";
+            var allEql = true;
+
+            while (windowIter.next()) |window| {
+                allEql &= std.mem.eql(u8, tempBuf, window);
+                tempBuf = window;
+            }
+
+            if (allEql) {
+                if (log) { std.debug.print("sequence: {s}\n", .{ string }); }
+                count.* += id;
+                break :inner;
+            }
         }
     }
 }
@@ -92,6 +136,7 @@ pub fn part2(allocator: *const Allocator) !void {
     defer ranges.deinit(allocator);
 
     try parseInput(input, allocator, &ranges);
+    try ranges.process_part_2(allocator, false);
 }
 
 const testInput =
@@ -105,4 +150,13 @@ test "part1" {
 
     try parseInput(testInput, &allocator, &ranges);
     try ranges.process_part_1(&allocator);
+}
+
+test "part2" {
+    const allocator = std.testing.allocator;
+    var ranges = Ranges.new();
+    defer ranges.deinit(&allocator);
+
+    try parseInput(testInput, &allocator, &ranges);
+    try ranges.process_part_2(&allocator, true);
 }
