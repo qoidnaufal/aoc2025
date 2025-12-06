@@ -1,5 +1,5 @@
 const std = @import("std");
-const root = @import("root.zig");
+const root = @import("aoc2025");
 const Allocator = std.mem.Allocator;
 const String = root.String;
 
@@ -30,7 +30,7 @@ const Ranges = struct {
         const lo = self.start.items;
         const hi = self.end.items;
 
-        var s = try String.new(allocator, 10);
+        const s = try String.new(allocator, 10);
         defer s.destroy(allocator);
 
         var count: usize = 0;
@@ -45,7 +45,7 @@ const Ranges = struct {
         const lo = self.start.items;
         const hi = self.end.items;
 
-        var s = try String.new(allocator, 10);
+        const s = try String.new(allocator, 10);
         defer s.destroy(allocator);
 
         var count: usize = 0;
@@ -57,9 +57,9 @@ const Ranges = struct {
     }
 };
 
-inline fn repeated_twice(start: usize, end: usize, count: *usize, s: *String) !void {
+inline fn repeated_twice(start: usize, end: usize, count: *usize, s: *const String) !void {
     for (start..end + 1) |id| {
-        const string = try s.createStr("{d}", .{ id });
+        const string = try s.toStr("{d}", .{ id });
 
         const mid = string.len / 2;
         const front = string[0..mid];
@@ -75,14 +75,15 @@ inline fn repeated_more_than_twice(
     start: usize,
     end: usize,
     count: *usize,
-    s: *String,
+    s: *const String,
     comptime log: bool
 ) !void {
     for (start..end + 1) |id| {
-        const string = try s.createStr("{d}", .{ id });
+        const string = try s.toStr("{d}", .{ id });
+        var index = string.len / 2;
 
-        inner: for (0..string.len / 2) |index| {
-            var windowIter = std.mem.window(u8, string, index + 1, index + 1);
+        inner: while (index > 0) {
+            var windowIter = std.mem.window(u8, string, index, index);
             var tempBuf: []const u8 = windowIter.next() orelse "";
             var allEql = true;
 
@@ -90,6 +91,8 @@ inline fn repeated_more_than_twice(
                 allEql &= std.mem.eql(u8, tempBuf, window);
                 tempBuf = window;
             }
+
+            index -= 1;
 
             if (allEql) {
                 if (log) { std.debug.print("sequence: {s}\n", .{ string }); }

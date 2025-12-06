@@ -14,11 +14,11 @@ pub const String = struct {
         };
     }
 
-    pub fn createStr(self: *Self, comptime fmt: []const u8, args: anytype) ![]u8 {
+    pub fn toStr(self: *const Self, comptime fmt: []const u8, args: anytype) ![]u8 {
         return try std.fmt.bufPrint(self.inner, fmt, args);
     }
 
-    pub fn destroy(self: *Self, allocator: *const Allocator) void {
+    pub fn destroy(self: *const Self, allocator: *const Allocator) void {
         allocator.free(self.inner);
     }
 };

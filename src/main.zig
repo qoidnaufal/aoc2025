@@ -1,12 +1,14 @@
 const std = @import("std");
 const day01 = @import("day01.zig");
 const day02 = @import("day02.zig");
+const day03 = @import("day03.zig");
 
 const Day = enum {
     day01a,
     day01b,
     day02a,
     day02b,
+    day03a,
 };
 
 pub fn main() !void {
@@ -28,6 +30,7 @@ pub fn main() !void {
             .day01b => try day01.part2(&allocator),
             .day02a => try day02.part1(&allocator),
             .day02b => try day02.part2(&allocator),
+            .day03a => try day03.part1(&allocator),
         }
     } else {
         printInstruction();
