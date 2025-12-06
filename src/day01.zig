@@ -72,7 +72,7 @@ const Data = struct {
             self.click += @intFromBool(start == 0);
         }
 
-        std.debug.print("\nResult part 1 is: {d}\n\n", .{ self.click });
+        std.debug.print("\nResult part 1 is: {d}\n", .{ self.click });
     }
 
     fn process_part_2(self: *Self, comptime log: bool) void {
@@ -82,17 +82,16 @@ const Data = struct {
 
         for (items.direction.*, items.distance.*) |dir, dis| {
             self.click += dis / 100;
-            var remDist: u32 = 0;
+            var remDist = dis % 100;
             if (log) { std.debug.print("{d:3} => {any}{d:<3} => ", .{ start, dir, dis }); }
 
             switch (dir) {
                 .L => {
-                    remDist = 100 - (dis % 100);
-                    self.click += @intFromBool((dis % 100) > start and start > 0);
+                    self.click += @intFromBool(remDist > start and start > 0);
+                    remDist = 100 - remDist;
                     if (log) { std.debug.print("current: {d:2} . remDist: {d:2} . ", .{ start, remDist }); }
                 },
                 .R => {
-                    remDist = dis % 100;
                     self.click += @intFromBool(start + remDist > 100);
                     if (log) { std.debug.print("current: {d:2} . remDist: {d:2} . ", .{ start, remDist }); }
                 },
@@ -125,7 +124,7 @@ fn parseInput(input: []const u8, allocator: *const Allocator, data: *Data) !void
     }
 }
 
-pub fn run(allocator: *const Allocator) !void {
+pub fn part1(allocator: *const Allocator) !void {
     const input = try root.read_input(allocator, "puzzle_input/day01.txt");
     defer allocator.free(input);
 
@@ -134,6 +133,16 @@ pub fn run(allocator: *const Allocator) !void {
 
     try parseInput(input, allocator, &data);
     data.process_part_1();
+}
+
+pub fn part2(allocator: *const Allocator) !void {
+    const input = try root.read_input(allocator, "puzzle_input/day01.txt");
+    defer allocator.free(input);
+
+    var data = Data.new();
+    defer data.deinit(allocator);
+
+    try parseInput(input, allocator, &data);
     data.process_part_2(false);
 }
 
@@ -151,7 +160,7 @@ const testInput =
 \\
 ;
 
-test "day01" {
+test "day01a" {
     const allocator = std.testing.allocator;
     var data = Data.new();
     defer data.deinit(&allocator);
@@ -160,7 +169,7 @@ test "day01" {
     data.process_part_1();
 }
 
-test "day02" {
+test "day01b" {
     const allocator = std.testing.allocator;
     var data = Data.new();
     defer data.deinit(&allocator);
